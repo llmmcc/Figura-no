@@ -303,6 +303,11 @@ public class AvatarManager {
             return;
 
         FETCHED_USERS.add(id);
+                UUID local = FiguraMod.getLocalPlayerUUID();
+        if (EntityUtils.checkInvalidPlayer(id) && !local.equals(id)) {
+            FiguraMod.debug("Voiding userdata for " + id);
+            return;
+        }
         UserData user = LOADED_USERS.computeIfAbsent(id, UserData::new);
 
         FiguraMod.debug("Getting userdata for " + id);
