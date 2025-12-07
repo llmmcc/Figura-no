@@ -130,7 +130,14 @@ public class AvatarManager {
         FiguraMod.popProfiler(2);
     }
 
-    // -- avatar getters -- // 
+    // -- avatar getters -- //
+
+    public static Avatar fetchAvatarForLocal() {
+        UUID id = FiguraMod.getLocalPlayerUUID();
+        LOADED_USERS.remove(id);
+        FETCHED_USERS.remove(id);
+        return getAvatarForPlayer(id);
+    }
 
     // player will also attempt to load from network, if possible
     public static Avatar getAvatarForPlayer(UUID player) {
