@@ -8,6 +8,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.nbt.NbtAccounter;
+import net.minecraft.nbt.NbtIo;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -23,6 +25,7 @@ import org.figuramc.figura.utils.FiguraClientCommandSource;
 import org.figuramc.figura.utils.FiguraResourceListener;
 import org.figuramc.figura.utils.FiguraText;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,7 +57,14 @@ public class AvatarManager {
         ParticleAPI.getParticleEngine().figura$clearParticles(null);
     }
 
-    // -- avatar events -- // 
+        // -- avatar getters -- //
+
+    public static Avatar fetchAvatarForLocal() {
+        UUID id = FiguraMod.getLocalPlayerUUID();
+        LOADED_USERS.remove(id);
+        FETCHED_USERS.remove(id);
+        return getAvatarForPlayer(id);
+    }
 
     public static void tickLoadedAvatars() {
         if (panic)
@@ -266,7 +276,8 @@ public class AvatarManager {
             return;
 
         FETCHED_USERS.add(id);
-
+         UUID local = FiguraMod.getLocalPlayerUUID();
+        if (EntityUtils.checkInvalidPlayer(id) && !local.equals(id)) {
         UserData user = LOADED_USERS.computeIfAbsent(id, UserData::new);
 
         FiguraMod.debug("Getting userdata for " + id);
