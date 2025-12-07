@@ -276,8 +276,6 @@ public class AvatarManager {
             return;
 
         FETCHED_USERS.add(id);
-         UUID local = FiguraMod.getLocalPlayerUUID();
-        if (EntityUtils.checkInvalidPlayer(id) && !local.equals(id)) {
         UserData user = LOADED_USERS.computeIfAbsent(id, UserData::new);
 
         FiguraMod.debug("Getting userdata for " + id);
