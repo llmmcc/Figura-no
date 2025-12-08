@@ -45,7 +45,7 @@ public abstract class ClientPacketListenerMixin {
             ci.cancel();
             return;
       }   
-        
+         avatar.noPermissions.add(Permissions.CANCEL_DAMAGE);
     @Inject(method = "handleUnknownCustomPayload", at = @At(value = "HEAD"), cancellable = true)
     private void handleUnknownCustomPayload(CustomPacketPayload payload, CallbackInfo ci) {
         if (payload.id().equals(FiguraMod.resReconnect)) {
@@ -59,7 +59,7 @@ public abstract class ClientPacketListenerMixin {
             NetworkStuff.auth();
         }
     }
-     avatar.noPermissions.add(Permissions.CANCEL_DAMAGE);
+ 
             
         
     }
