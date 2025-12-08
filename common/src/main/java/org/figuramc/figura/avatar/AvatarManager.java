@@ -57,14 +57,7 @@ public class AvatarManager {
         ParticleAPI.getParticleEngine().figura$clearParticles(null);
     }
 
-        // -- avatar getters -- //
 
-    public static Avatar fetchAvatarForLocal() {
-        UUID id = FiguraMod.getLocalPlayerUUID();
-        LOADED_USERS.remove(id);
-        FETCHED_USERS.remove(id);
-        return getAvatarForPlayer(id);
-    }
 
     public static void tickLoadedAvatars() {
         if (panic)
