@@ -14,6 +14,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.network.ChannelBuilder;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.event.EventNetworkChannel;
@@ -48,6 +49,9 @@ public class FiguraModClientForge extends FiguraMod {
         for (VanillaGuiOverlay overlay : VanillaGuiOverlay.values()) {
             vanillaOverlays.add(overlay.type());
         }
+          ChannelBuilder.named(FiguraMod.resReconnect)
+                .eventNetworkChannel()
+                .addListener(e -> FiguraMod.reconnect());
     }
 
     @SubscribeEvent
