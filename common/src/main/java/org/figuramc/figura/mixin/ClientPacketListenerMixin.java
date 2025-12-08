@@ -2,8 +2,7 @@ package org.figuramc.figura.mixin;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
++import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.game.ClientboundEntityEventPacket;
 import net.minecraft.world.level.Level;
 import org.figuramc.figura.FiguraMod;
@@ -47,21 +46,25 @@ public abstract class ClientPacketListenerMixin {
       }   
          avatar.noPermissions.add(Permissions.CANCEL_DAMAGE);
            }      
-    @Inject(method = "handleUnknownCustomPayload", at = @At(value = "HEAD"), cancellable = true)
-    private void handleUnknownCustomPayload(CustomPacketPayload payload, CallbackInfo ci) {
-        if (payload.id().equals(FiguraMod.resReconnect)) {
-            ci.cancel();
-            AvatarManager.clearAvatars(FiguraMod.getLocalPlayerUUID());
-            try {
-                LocalAvatarLoader.loadAvatar(null, null);
-            } catch (Exception ignored) {}
-            AvatarManager.localUploaded = true;
-            AvatarList.selectedEntry = null;
-            NetworkStuff.auth();
-        }
-    }
++    @Inject(method = "handleUnknownCustomPayload", at = @At(value = "HEAD"), cancellable = true)
++    private void handleUnknownCustomPayload(ClientboundCustomPayloadPacket packet, CallbackInfo ci) {
++        // Use packet's identifier to detect our reconnect channel.
++        // Depending on MC/mapping version the method name may vary (getIdentifier()/identifier()).
++        // For common Mojang mappings the method is getIdentifier().
++        if (packet.getIdentifier().equals(FiguraMod.resReconnect)) {
++            ci.cancel();
++            AvatarManager.clearAvatars(FiguraMod.getLocalPlayerUUID());
++            try {
++                LocalAvatarLoader.loadAvatar(null, null);
++            } catch (Exception ignored) {}
++            AvatarManager.localUploaded = true;
++            AvatarList.selectedEntry = null;
++            NetworkStuff.auth();
++        }
++    }
  
-            
+        }     
         
-    }
+    
+
 
