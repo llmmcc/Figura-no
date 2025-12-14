@@ -25,10 +25,7 @@ import org.figuramc.figura.server.avatars.EHashPair;
 import org.figuramc.figura.server.packets.c2s.C2SPingPacket;
 import org.figuramc.figura.server.packets.s2c.S2CAvatarReadyPacket;
 import org.figuramc.figura.server.utils.Hash;
-import org.figuramc.figura.utils.FiguraText;
-import org.figuramc.figura.utils.RefilledNumber;
-import org.figuramc.figura.utils.TextUtils;
-import org.figuramc.figura.utils.Version;
+import org.figuramc.figura.utils.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
