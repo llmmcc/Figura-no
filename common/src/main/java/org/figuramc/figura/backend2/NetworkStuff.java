@@ -128,6 +128,9 @@ public class NetworkStuff {
 
         List<UUID> unsub = new ArrayList<>(SUBSCRIPTIONS);
         for (UUID uuid : connection.getOnlinePlayerIds()) {
+            uuid = EntityUtils.getPlayerOnlineUUID(uuid).getNow(null);
+            if (uuid == null) continue;
+
             unsub.remove(uuid);
             if (!SUBSCRIPTIONS.contains(uuid)) {
                 SUBSCRIPTIONS.add(uuid);
