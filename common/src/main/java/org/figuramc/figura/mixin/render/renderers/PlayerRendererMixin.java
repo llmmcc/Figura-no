@@ -26,6 +26,7 @@ import org.figuramc.figura.lua.api.ClientAPI;
 import org.figuramc.figura.lua.api.nameplate.EntityNameplateCustomization;
 import org.figuramc.figura.lua.api.vanilla_model.VanillaPart;
 import org.figuramc.figura.permissions.Permissions;
+import org.figuramc.figura.utils.EntityUtils;
 import org.figuramc.figura.utils.RenderUtils;
 import org.figuramc.figura.utils.TextUtils;
 import org.joml.Matrix4f;
@@ -106,7 +107,7 @@ public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractC
 
         // badges
         FiguraMod.popPushProfiler("badges");
-        replacement = Badges.appendBadges(replacement, player.getUUID(), config > 1);
+        replacement = Badges.appendBadges(replacement, playerUUID, config > 1);
 
         FiguraMod.popPushProfiler("applyName");
         text = TextUtils.replaceInText(text, "\\b" + Pattern.quote(player.getName().getString()) + "\\b", replacement);
@@ -134,8 +135,11 @@ public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractC
         if (config == 0 || AvatarManager.panic || this.entityRenderDispatcher.distanceToSqr(player) > 4096)
             return;
 
+        var playerUUID = EntityUtils.getEntityUUID(player).getNow(null);
+        if (playerUUID == null) return;
+
         // get customizations
-        Avatar avatar = AvatarManager.getAvatarForPlayer(player.getUUID());
+        Avatar avatar = AvatarManager.getAvatarForPlayer(playerUUID);
         EntityNameplateCustomization custom = avatar == null || avatar.luaRuntime == null ? null : avatar.luaRuntime.nameplate.ENTITY;
 
         // customization boolean, which also is the permission check
@@ -194,7 +198,10 @@ public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractC
 
     @Inject(method = "setupRotations", at = @At("HEAD"), cancellable = true)
     private void setupRotations(AbstractClientPlayer entity, PoseStack poseStack, float f, float f2, float f3, CallbackInfo cir) {
-        Avatar avatar = AvatarManager.getAvatar(entity);
+        var playerUUID = EntityUtils.getEntityUUID(player).getNow(null);
+        if (playerUUID == null) return;
+
+        avatar = AvatarManager.getAvatarForPlayer(playerUUID);
         if (RenderUtils.vanillaModelAndScript(avatar) && !avatar.luaRuntime.renderer.getRootRotationAllowed()) {
             cir.cancel();
         }
