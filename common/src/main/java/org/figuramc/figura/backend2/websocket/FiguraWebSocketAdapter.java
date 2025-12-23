@@ -55,7 +55,7 @@ public class FiguraWebSocketAdapter extends WebSocketAdapter {
     }
 
     public static String getBackendAddress() {
-        return "wss://" + getBackendAddressWithPort() + "/ws";
+        return "ws://" + getBackendAddressWithPort() + "/ws";
     }
 
     private static String getBackendAddressWithPort() {
