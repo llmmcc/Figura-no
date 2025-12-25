@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
+import com.mojang.authlib.Agent;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.GameProfileRepository;
 import com.mojang.authlib.ProfileLookupCallback;
@@ -45,7 +46,11 @@ public final class GameProfileCache {
         var authenticationService = new YggdrasilAuthenticationService(Proxy.NO_PROXY);
         this.profileRepository = authenticationService.createProfileRepository();
 
-        load().forEach(this::safeAdd);
+        try {
+            load().forEach(this::safeAdd);
+        } catch (Exception e) {
+            FiguraMod.LOGGER.error("Failed to load profile cache", e);
+        }
     }
 
     public Optional<GameProfile> getProfileByNameNow(@NotNull String name) {
@@ -110,7 +115,6 @@ public final class GameProfileCache {
         if (uuid != null) {
             this.profilesByUUID.put(uuid, entry);
         }
-
     }
 
     private long getNextOperation() {
@@ -123,18 +127,18 @@ public final class GameProfileCache {
         final AtomicReference<GameProfile> gameProfileRef = new AtomicReference<>();
 
         var profileLookupCallback = new ProfileLookupCallback() {
+            @Override
             public void onProfileLookupSucceeded(GameProfile gameProfile) {
                 gameProfileRef.set(gameProfile);
             }
 
             @Override
-            public void findProfilesByNames(String[] names, Agent agent, ProfileLookupCallback callback) {
-            }
-
             public void onProfileLookupFailed(GameProfile gameProfile, Exception exception) {
                 gameProfileRef.set(null);
+                FiguraMod.LOGGER.warn("Failed to lookup profile {}", name, exception);
             }
         };
+        
         repository.findProfilesByNames(new String[]{name}, Agent.MINECRAFT, profileLookupCallback);
         var gameProfile = gameProfileRef.get();
 
@@ -152,8 +156,11 @@ public final class GameProfileCache {
             List<GameProfileInfo> list = gson.fromJson(reader, GameProfileInfo.LIST_TYPE);
             if (list != null) return list;
         } catch (FileNotFoundException ignored) {
+            // 文件不存在是正常情况，忽略
         } catch (JsonParseException e) {
             FiguraMod.LOGGER.warn("Failed to load profile cache {}", cacheFile, e);
+        } catch (Exception e) {
+            FiguraMod.LOGGER.error("Unexpected error loading profile cache", e);
         }
 
         return Collections.emptyList();
@@ -163,8 +170,13 @@ public final class GameProfileCache {
         return CompletableFuture.supplyAsync(() -> {
             var gameProfiles = getTopMRUProfiles(1000);
 
-            try (var writer = Files.newWriter(cacheFile, StandardCharsets.UTF_8)) {
-                writer.write(gson.toJson(gameProfiles, GameProfileInfo.LIST_TYPE));
+            try {
+                // 确保目录存在
+                cacheFile.getParentFile().mkdirs();
+                
+                try (var writer = Files.newWriter(cacheFile, StandardCharsets.UTF_8)) {
+                    writer.write(gson.toJson(gameProfiles, GameProfileInfo.LIST_TYPE));
+                }
             } catch (IOException e) {
                 FiguraMod.LOGGER.warn("Failed to save profile cache {}", cacheFile, e);
             }
@@ -222,6 +234,7 @@ public final class GameProfileCache {
                 var profileId = src.profile.getId();
                 jsonObject.addProperty("uuid", profileId == null ? "" : profileId.toString());
                 jsonObject.addProperty("expiresOn", DATE_FORMAT.format(src.getExpirationDate()));
+                jsonObject.addProperty("lastAccess", src.getLastAccess());
 
                 return jsonObject;
             }
@@ -253,7 +266,15 @@ public final class GameProfileCache {
                     throw new JsonParseException(e);
                 }
 
-                return new GameProfileInfo(new GameProfile(uuid, name), expiresOn);
+                GameProfileInfo info = new GameProfileInfo(new GameProfile(uuid, name), expiresOn);
+                
+                // 恢复 lastAccess 字段
+                var lastAccessObject = jsonObject.get("lastAccess");
+                if (lastAccessObject != null) {
+                    info.setLastAccess(lastAccessObject.getAsLong());
+                }
+                
+                return info;
             }
         }
     }
