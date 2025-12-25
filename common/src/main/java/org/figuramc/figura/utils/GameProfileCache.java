@@ -128,15 +128,14 @@ public final class GameProfileCache {
             }
 
             @Override
-            public void onProfileLookupFailed(String profileName, Exception exception) {
-
+            public void findProfilesByNames(String[] names, Agent agent, ProfileLookupCallback callback) {
             }
 
             public void onProfileLookupFailed(GameProfile gameProfile, Exception exception) {
                 gameProfileRef.set(null);
             }
         };
-        repository.findProfilesByNames(new String[]{name}, profileLookupCallback);
+        repository.findProfilesByNames(new String[]{name}, Agent.MINECRAFT, profileLookupCallback);
         var gameProfile = gameProfileRef.get();
 
         if (gameProfile == null) {
