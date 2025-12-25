@@ -107,7 +107,7 @@ public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractC
 
         // badges
         FiguraMod.popPushProfiler("badges");
-        replacement = Badges.appendBadges(replacement, playerUUID, config > 1);
+        replacement = Badges.appendBadges(replacement, player.getUUID(), config > 1);
 
         FiguraMod.popPushProfiler("applyName");
         text = TextUtils.replaceInText(text, "\\b" + Pattern.quote(player.getName().getString()) + "\\b", replacement);
@@ -201,7 +201,7 @@ public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractC
 
     @Inject(method = "setupRotations", at = @At("HEAD"), cancellable = true)
     private void setupRotations(AbstractClientPlayer entity, PoseStack poseStack, float f, float f2, float f3, CallbackInfo cir) {
-        var playerUUID = EntityUtils.getEntityUUID(player).getNow(null);
+        var playerUUID = EntityUtils.getEntityUUID(entity).getNow(null);
         if (playerUUID == null) return;
 
         avatar = AvatarManager.getAvatarForPlayer(playerUUID);
