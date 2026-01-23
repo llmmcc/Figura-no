@@ -228,6 +228,26 @@ public class BlockBenchModel {
             addFace(faces[5], FiguraVec4.of(x + size.z + size.x + size.z, y + size.z, x + size.z + size.x + size.z + size.x, y + size.z + size.y), texture, scaleW, scaleH);
         }
     }
+    public static class Element {  
+    // Existing fields...  
+        JsonObject vertex_weights; // New: vertex weight data  
+    }  
+    public static class ArmatureBone {  
+        String name;  
+        String uuid;  
+        String[] children;  
+        float[] origin;  
+        float[] rotation;  
+        float length;  
+        float width;  
+        boolean connected;  
+        JsonObject vertex_weights; // vertex weights for this bone  
+    } 
+    public static class Armature {  
+        String name;  
+        String uuid;  
+        String[] children;  
+    }
 
     public static class Group extends Element {
 
