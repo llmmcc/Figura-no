@@ -195,13 +195,15 @@ public class BlockbenchCommonTypes {
     }
 
     @SuppressWarnings("unused")
-    public static abstract class Element implements UUIDReferable, NBTRepresentation<CompoundTag> {
+    public static class Element implements UUIDReferable, NBTRepresentation<CompoundTag> {
         public static final TypeAdapterFactory ADAPTER_FACTORY =
                 new GsonTypeByField<>(Element.class, "type")
                         .bind("cube", CubeElement.class)
                         .bind("mesh", MeshElement.class)
                         .bind("locator", PointElement.class)
                         .bind("null_object", PointElement.class)
+                        .bind("armature", Armature.class)
+                        .bind("armature_bone", ArmatureBone.class)
                         .withFallback(UnknownElement.class);
 
         String name;
@@ -397,6 +399,37 @@ public class BlockbenchCommonTypes {
                     uvs.add(FloatTag.valueOf((float) (uv.x * fixedSize.x)));
                     uvs.add(FloatTag.valueOf((float) (uv.y * fixedSize.y)));
                 }
+            }
+
+            // Process skinning data
+            ListTag weights = new ListTag();
+            ListTag bones = new ListTag();
+            
+            // Collect all bone weights for this mesh
+            for (Map.Entry<String, BlockbenchCommonTypes.UUIDReferable> entry : context.referents.entrySet()) {
+                if (entry.getValue() instanceof BlockbenchCommonTypes.ArmatureBone bone) {
+                    if (bone.vertex_weights != null) {
+                        for (Map.Entry<String, Float> weightEntry : bone.vertex_weights.entrySet()) {
+                            String key = weightEntry.getKey();
+                            if (key.startsWith(uuid + ":")) {
+                                String vertID = key.substring((uuid + ":").length());
+                                Integer vertIndex = vert2idx.get(vertID);
+                                if (vertIndex != null) {
+                                    // Add weight data: [vertexIndex, boneIndex, weight]
+                                    ListTag weightData = new ListTag();
+                                    weightData.add(IntTag.valueOf(vertIndex));
+                                    weightData.add(StringTag.valueOf(bone.uuid));
+                                    weightData.add(FloatTag.valueOf(weightEntry.getValue()));
+                                    weights.add(weightData);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!weights.isEmpty()) {
+                meshData.put("weights", weights);
             }
 
             meshData.put("vtx", vtx);
@@ -719,5 +752,63 @@ public class BlockbenchCommonTypes {
         public String getUUID() {
             return uuid;
         }
+    }
+
+    public static class ArmatureBone extends Element {
+        String name;
+        String uuid;
+        String type;
+        List<String> children;
+        FiguraVec3 origin;
+        FiguraVec3 rotation;
+        float length;
+        float width;
+        boolean connected;
+        int color;
+        Map<String, Float> vertex_weights;
+        boolean allow_mirror_modeling;
+
+        @Override
+        public String getUUID() {
+            return uuid;
+        }
+
+        @Override
+        public @Nullable CompoundTag toNBT(BlockbenchParser2.Intermediary context) {
+            CompoundTag tag = super.toNBT(context);
+            if (tag == null) return null;
+
+            if (origin != null && !origin.equals(ZERO))
+                tag.put("piv", vecToList(origin));
+            if (rotation != null && !rotation.equals(ZERO))
+                tag.put("rot", vecToList(rotation));
+
+            return tag;
+        }
+    }
+
+    public static class Armature extends Element {
+        String name;
+        String uuid;
+        String type;
+        List<String> children;
+        boolean isOpen;
+
+        @Override
+        public String getUUID() {
+            return uuid;
+        }
+
+        @Override
+        public @Nullable CompoundTag toNBT(BlockbenchParser2.Intermediary context) {
+            CompoundTag tag = super.toNBT(context);
+            if (tag == null) return null;
+
+            return tag;
+        }
+    }
+
+    public static class VertexWeights {
+        Map<String, Float> weights;
     }
 }

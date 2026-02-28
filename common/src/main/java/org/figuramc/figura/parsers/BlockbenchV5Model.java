@@ -230,9 +230,9 @@ public class BlockbenchV5Model extends ModelFormat {
             @Override
             public @Nullable CompoundTag toNBT(BlockbenchParser2.Intermediary context) {
                 UUIDReferable groupProbably = context.referents.get(uuid);
-                if (!(groupProbably instanceof Group group)) {
+                if (!(groupProbably instanceof Group group) && !(groupProbably instanceof BlockbenchCommonTypes.Armature armature) && !(groupProbably instanceof BlockbenchCommonTypes.ArmatureBone bone)) {
                     FiguraMod.LOGGER.warn(
-                            "Broken reference (in model '{}'): expected a group at UUID {} but found {} instead",
+                            "Broken reference (in model '{}'): expected a group, armature, or armature_bone at UUID {} but found {} instead",
                             context.name,
                             uuid,
                             groupProbably == null ? "(nothing with that UUID!)" : groupProbably.getClass()
@@ -240,20 +240,40 @@ public class BlockbenchV5Model extends ModelFormat {
                     );
                     return null;
                 }
-                if (Boolean.FALSE.equals(group.export)) return null;
+                if (groupProbably instanceof Group && Boolean.FALSE.equals(((Group) groupProbably).export)) return null;
 
                 CompoundTag tag = new CompoundTag();
-                tag.putString("name", group.name);
+                
+                if (groupProbably instanceof Group) {
+                    Group group = (Group) groupProbably;
+                    tag.putString("name", group.name);
+                    if (Boolean.FALSE.equals(group.visibility))
+                        tag.putBoolean("vsb", false);
+                    if (group.origin != null && !group.origin.equals(ZERO))
+                        tag.put("piv", BlockbenchCommonTypes.vecToList(group.origin));
+                    if (group.rotation != null && !group.rotation.equals(ZERO))
+                        tag.put("rot", BlockbenchCommonTypes.vecToList(group.rotation));
+                } else if (groupProbably instanceof BlockbenchCommonTypes.Armature) {
+                    BlockbenchCommonTypes.Armature armature = (BlockbenchCommonTypes.Armature) groupProbably;
+                    tag.putString("name", armature.name);
+                } else if (groupProbably instanceof BlockbenchCommonTypes.ArmatureBone) {
+                    BlockbenchCommonTypes.ArmatureBone bone = (BlockbenchCommonTypes.ArmatureBone) groupProbably;
+                    tag.putString("name", bone.name);
+                    if (bone.origin != null && !bone.origin.equals(ZERO))
+                        tag.put("piv", BlockbenchCommonTypes.vecToList(bone.origin));
+                    if (bone.rotation != null && !bone.rotation.equals(ZERO))
+                        tag.put("rot", BlockbenchCommonTypes.vecToList(bone.rotation));
+                }
 
-                if (Boolean.FALSE.equals(group.visibility))
-                    tag.putBoolean("vsb", false);
-
-                if (group.origin != null && !group.origin.equals(ZERO))
-                    tag.put("piv", BlockbenchCommonTypes.vecToList(group.origin));
-                if (group.rotation != null && !group.rotation.equals(ZERO))
-                    tag.put("rot", BlockbenchCommonTypes.vecToList(group.rotation));
-
-                BlockbenchCommonTypes.parseParent(group.name, tag);
+                String name = "";
+                if (groupProbably instanceof Group) {
+                    name = ((Group) groupProbably).name;
+                } else if (groupProbably instanceof BlockbenchCommonTypes.Armature) {
+                    name = ((BlockbenchCommonTypes.Armature) groupProbably).name;
+                } else if (groupProbably instanceof BlockbenchCommonTypes.ArmatureBone) {
+                    name = ((BlockbenchCommonTypes.ArmatureBone) groupProbably).name;
+                }
+                BlockbenchCommonTypes.parseParent(name, tag);
 
                 ListTag chld = new ListTag();
                 for (OutlinerItem child : children) {
@@ -280,7 +300,8 @@ public class BlockbenchV5Model extends ModelFormat {
                     tag.put("anim", anim);
                 }
 
-                BlockbenchCommonTypes.attachCollections(context, group.uuid, tag);
+                String uuid = groupProbably.getUUID();
+                BlockbenchCommonTypes.attachCollections(context, uuid, tag);
 
                 return tag;
             }
