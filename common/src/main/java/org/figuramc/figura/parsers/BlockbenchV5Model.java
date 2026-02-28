@@ -29,6 +29,8 @@ public class BlockbenchV5Model extends ModelFormat {
     List<Element> elements;
 
     List<Group> groups;
+    List<Armature> armatures;
+    List<Bone> bones;
 
     List<OutlinerItem> outliner;
 
@@ -68,6 +70,18 @@ public class BlockbenchV5Model extends ModelFormat {
                 instance.groups.add(context.deserialize(item, Group.class));
             }
 
+        instance.armatures = new ArrayList<>();
+        if (obj.has("armatures"))
+            for (JsonElement item : obj.getAsJsonArray("armatures")) {
+                instance.armatures.add(context.deserialize(item, Armature.class));
+            }
+
+        instance.bones = new ArrayList<>();
+        if (obj.has("bones"))
+            for (JsonElement item : obj.getAsJsonArray("bones")) {
+                instance.bones.add(context.deserialize(item, Bone.class));
+            }
+
         instance.outliner = new ArrayList<>();
         if (obj.has("outliner"))
             for (JsonElement item : obj.getAsJsonArray("outliner")) {
@@ -102,6 +116,10 @@ public class BlockbenchV5Model extends ModelFormat {
             refs.put(element.uuid, element);
         for (Group group : groups)
             refs.put(group.uuid, group);
+        for (Armature armature : armatures)
+            refs.put(armature.uuid, armature);
+        for (Bone bone : bones)
+            refs.put(bone.uuid, bone);
         return refs;
     }
 
@@ -183,6 +201,38 @@ public class BlockbenchV5Model extends ModelFormat {
         }
     }
 
+    public static class Armature implements UUIDReferable {
+        String name;
+        String uuid;
+
+        @Nullable Boolean visibility;
+        @Nullable Boolean export;
+
+        FiguraVec3 origin;
+        FiguraVec3 rotation;
+
+        @Override
+        public String getUUID() {
+            return uuid;
+        }
+    }
+
+    public static class Bone implements UUIDReferable {
+        String name;
+        String uuid;
+
+        @Nullable Boolean visibility;
+        @Nullable Boolean export;
+
+        FiguraVec3 origin;
+        FiguraVec3 rotation;
+
+        @Override
+        public String getUUID() {
+            return uuid;
+        }
+    }
+
     public static abstract class OutlinerItem implements NBTRepresentation<CompoundTag> {
         @Override
         public abstract @Nullable CompoundTag toNBT(BlockbenchParser2.Intermediary context);
@@ -229,37 +279,68 @@ public class BlockbenchV5Model extends ModelFormat {
 
             @Override
             public @Nullable CompoundTag toNBT(BlockbenchParser2.Intermediary context) {
-                UUIDReferable groupProbably = context.referents.get(uuid);
-                if (!(groupProbably instanceof Group group)) {
+                UUIDReferable referable = context.referents.get(uuid);
+                
+                // 处理不同类型的容器：Group、Armature 或 Bone
+                String name = "";
+                Boolean visibility = null;
+                Boolean export = null;
+                FiguraVec3 origin = null;
+                FiguraVec3 rotation = null;
+                String referableUUID = uuid;
+                
+                if (referable instanceof Group group) {
+                    name = group.name;
+                    visibility = group.visibility;
+                    export = group.export;
+                    origin = group.origin;
+                    rotation = group.rotation;
+                    referableUUID = group.uuid;
+                } else if (referable instanceof Armature armature) {
+                    name = armature.name;
+                    visibility = armature.visibility;
+                    export = armature.export;
+                    origin = armature.origin;
+                    rotation = armature.rotation;
+                    referableUUID = armature.uuid;
+                } else if (referable instanceof Bone bone) {
+                    name = bone.name;
+                    visibility = bone.visibility;
+                    export = bone.export;
+                    origin = bone.origin;
+                    rotation = bone.rotation;
+                    referableUUID = bone.uuid;
+                } else {
                     FiguraMod.LOGGER.warn(
-                            "Broken reference (in model '{}'): expected a group at UUID {} but found {} instead",
+                            "Broken reference (in model '{}'): expected a group, armature, or bone at UUID {} but found {} instead",
                             context.name,
                             uuid,
-                            groupProbably == null ? "(nothing with that UUID!)" : groupProbably.getClass()
+                            referable == null ? "(nothing with that UUID!)" : referable.getClass()
                                     .getSimpleName()
                     );
                     return null;
                 }
-                if (Boolean.FALSE.equals(group.export)) return null;
+                
+                if (Boolean.FALSE.equals(export)) return null;
 
                 CompoundTag tag = new CompoundTag();
-                tag.putString("name", group.name);
+                tag.putString("name", name);
 
-                if (Boolean.FALSE.equals(group.visibility))
+                if (Boolean.FALSE.equals(visibility))
                     tag.putBoolean("vsb", false);
 
-                if (group.origin != null && !group.origin.equals(ZERO))
-                    tag.put("piv", BlockbenchCommonTypes.vecToList(group.origin));
-                if (group.rotation != null && !group.rotation.equals(ZERO))
-                    tag.put("rot", BlockbenchCommonTypes.vecToList(group.rotation));
+                if (origin != null && !origin.equals(ZERO))
+                    tag.put("piv", BlockbenchCommonTypes.vecToList(origin));
+                if (rotation != null && !rotation.equals(ZERO))
+                    tag.put("rot", BlockbenchCommonTypes.vecToList(rotation));
 
-                BlockbenchCommonTypes.parseParent(group.name, tag);
+                BlockbenchCommonTypes.parseParent(name, tag);
 
                 ListTag chld = new ListTag();
                 for (OutlinerItem child : children) {
                     CompoundTag childTag = child.toNBT(context);
                     if (childTag != null) {
-                        if (childTag.contains("vsb") && Objects.equals(group.visibility, childTag.getBoolean("vsb")))
+                        if (childTag.contains("vsb") && Objects.equals(visibility, childTag.getBoolean("vsb")))
                             childTag.remove("vsb");
                         chld.add(childTag);
                     }
@@ -280,7 +361,7 @@ public class BlockbenchV5Model extends ModelFormat {
                     tag.put("anim", anim);
                 }
 
-                BlockbenchCommonTypes.attachCollections(context, group.uuid, tag);
+                BlockbenchCommonTypes.attachCollections(context, referableUUID, tag);
 
                 return tag;
             }
