@@ -29,7 +29,7 @@ public class HttpAPI {
     }
 
     protected static String getBackendAddress() {
-        return "https://" + getBackendAddressWithPort() + "/api";
+        return "http://" + getBackendAddressWithPort() + "/api";
     }
 
     private static String getBackendAddressWithPort() {
