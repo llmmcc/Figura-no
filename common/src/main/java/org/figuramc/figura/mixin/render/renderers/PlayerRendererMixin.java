@@ -29,6 +29,7 @@ import org.figuramc.figura.ducks.NodeCollectorExtension;
 import org.figuramc.figura.lua.api.nameplate.EntityNameplateCustomization;
 import org.figuramc.figura.lua.api.vanilla_model.VanillaPart;
 import org.figuramc.figura.permissions.Permissions;
+import org.figuramc.figura.utils.EntityUtils;
 import org.figuramc.figura.utils.RenderUtils;
 import org.figuramc.figura.utils.TextUtils;
 import org.spongepowered.asm.mixin.Mixin;
@@ -108,7 +109,7 @@ public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractC
         // badges
         FiguraMod.popPushProfiler("badges");
         if (Minecraft.getInstance().level.getEntity(player.id) != null) { // null while dead
-			replacement = Badges.appendBadges(replacement, Minecraft.getInstance().level.getEntity(player.id).getUUID(), config > 1);
+			replacement = Badges.appendBadges(replacement, playerUUID, Minecraft.getInstance().level.getEntity(player.id).getUUID(), config > 1);
 		}
 
         FiguraMod.popPushProfiler("applyName");
@@ -139,8 +140,11 @@ public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractC
         if (config == 0 || AvatarManager.panic || !(entity instanceof Player player) || this.entityRenderDispatcher.distanceToSqr(player) > 4096)
             return;
 
+		var playerUUID = EntityUtils.getEntityUUID(player).getNow(null);
+        if (playerUUID == null) return;
+		
         // get customizations
-        Avatar avatar = AvatarManager.getAvatarForPlayer(player.getUUID());
+        Avatar avatar = AvatarManager.getAvatarForPlayer(playerUUID);
         EntityNameplateCustomization custom = avatar == null || avatar.luaRuntime == null ? null : avatar.luaRuntime.nameplate.ENTITY;
 
         // customization boolean, which also is the permission check
@@ -169,7 +173,10 @@ public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractC
 
     @Inject(at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client/renderer/SubmitNodeCollector;submitModelPart(Lnet/minecraft/client/model/geom/ModelPart;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/rendertype/RenderType;IILnet/minecraft/client/renderer/texture/TextureAtlasSprite;)V"), method = "renderHand")
     private void onRenderHand(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int i, Identifier resourceLocation, ModelPart modelPart, boolean bl, CallbackInfo ci) {
-        avatar = AvatarManager.getAvatarForPlayer(Minecraft.getInstance().player.getUUID());
+        var playerUUID = EntityUtils.getEntityUUID(player).getNow(null);
+        if (playerUUID == null) return;
+
+        avatar = AvatarManager.getAvatarForPlayer(playerUUID);
 
 
         PlayerModel model = this.getModel();
