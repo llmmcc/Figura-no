@@ -20,6 +20,7 @@ import org.figuramc.figura.ducks.SkullBlockRendererAccessor;
 import org.figuramc.figura.lua.api.vanilla_model.VanillaModelPart;
 import org.figuramc.figura.math.matrix.FiguraMat4;
 import org.figuramc.figura.model.rendering.EntityRenderMode;
+import org.figuramc.figura.utils.EntityUtils;
 import org.figuramc.figura.utils.RenderUtils;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -43,7 +44,11 @@ public abstract class ItemInHandRendererMixin {
     // apparently hands are basically still immediate mode, wow thanks game...
     @Inject(method = "renderHandsWithItems", at = @At("HEAD"))
     private void onRenderHandsWithItems(float tickDelta, PoseStack matrices, SubmitNodeCollector submitNodeCollector, LocalPlayer player, int light, CallbackInfo ci) {
-        avatar = AvatarManager.getAvatarForPlayer(player.getUUID());
+        var playerUUID = EntityUtils.getEntityUUID(player).getNow(null);
+        if (playerUUID == null)
+            return;
+
+        avatar = AvatarManager.getAvatarForPlayer(playerUUID);
         if (avatar == null)
             return;
 
